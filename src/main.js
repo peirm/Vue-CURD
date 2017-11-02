@@ -14,6 +14,13 @@ import ElementUi from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 Vue.config.productionTip = false
 
+// 创建过滤器
+Vue.filter('formatter',function(value){
+  if(value == true){
+    return '启用'
+  }
+    return '停用'
+})
 // 使用vuex
 Vue.use(Vuex)
 // 使用element-ui
