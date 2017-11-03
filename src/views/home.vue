@@ -73,12 +73,12 @@
           </el-input>
         </el-form-item>
         <el-form-item label="密码：" prop="password">
-          <el-input type="text" v-model="addForm.password" auto-complete="off">
+          <el-input type="password" v-model="addForm.password" auto-complete="off">
 
           </el-input>
         </el-form-item>
         <el-form-item label="确认密码：" prop="repeat_password">
-          <el-input type="text" v-model="addForm.repeat_password" auto-complete="off">
+          <el-input type="password" v-model="addForm.repeat_password" auto-complete="off">
 
           </el-input>
         </el-form-item>
