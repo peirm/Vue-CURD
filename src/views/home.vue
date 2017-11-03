@@ -9,14 +9,14 @@
           <el-col :span="20" :offset="3">
             <div class="fr margin40">
               <el-button size="small" type="primary" icon="el-icon-plus" @click="addDialog = true">添加</el-button>
-              <el-button size="small" type="danger" icon="el-icon-delete">删除</el-button>
+              <el-button size="small" type="danger" icon="el-icon-delete" @click="deleteSButton">删除</el-button>
             </div>
           </el-col>
         </el-row>
         <el-row class="margin40">
           <el-col :span="24">
-            <el-table :data="userList" tooltip-effect="dark" style="width: 100%" :default-sort="{prop:'create_time',order:'descending'}">
-              <el-table-column type="selection" width="55" sortable>
+            <el-table :data="userList" tooltip-effect="dark" style="width: 100%" :default-sort="{prop:'create_time',order:'descending'}" @selection-change="selectionButton">
+              <el-table-column type="selection" width="55">
 
               </el-table-column>
               <el-table-column prop="username" width="180" label="用户名">
@@ -42,8 +42,8 @@
               <el-table-column label="操作" width="250">
                 <!-- 要想实现el-button 在el-table-column 中显示，就必须要用template包裹 -->
                 <template slot-scope="scope">
-                  <el-button size="small" type="success" icon="el-icon-edit">编辑</el-button>
-                  <el-button size="small" type="danger" icon="el-icon-delete">删除</el-button>
+                  <el-button size="small" type="success" icon="el-icon-edit" @click="setUser(scope.row)">编辑</el-button>
+                  <el-button size="small" type="danger" icon="el-icon-delete" @click="deleteUser(scope.row)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -56,19 +56,10 @@
               <el-pagination layout="prev,pager,next" :total="total" :page-size="5" @current-change="pageChange"></el-pagination>
             </div>
           </el-col>
-
-          <!--<el-col :span="24">
-            <div class="block">
-              <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage3" :page-size="5" layout="prev, pager, next, jumper" :total=total>
-              </el-pagination>
-            </div>
-          </el-col>-->
-
-
         </el-row>
       </el-main>
     </el-container>
-
+    <!-- 添加用户 -->
     <el-dialog title="添加新用户" :visible.sync="addDialog" class="el-dialogs" @close="resetForm('addForm')">
       <el-form :model="addForm" :rules="addRules" ref="addForm" label-width="100px">
         <el-form-item label="用户名：" prop="username">
@@ -112,7 +103,35 @@
         </el-form-item>
       </el-form>
     </el-dialog>
+    <!-- 修改用户 -->
+    <el-dialog title="修改用户" :visible.sync="editDialog" class="el-dialogs" @close="resetForm('editForm')">
+      <el-form :model="editForm" :rules="editRules" ref="editForm" label-width="100px">
+        <el-form-item label="姓名" prop="name">
+          <el-input type="text" v-model="editForm.name">
 
+          </el-input>
+        </el-form-item>
+        <el-form-item label="手机" prop="phone">
+          <el-input type="text" v-model.number="editForm.phone">
+
+          </el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input type="email" v-model="editForm.email">
+
+          </el-input>
+        </el-form-item>
+        <el-form-item label="是否启用">
+          <el-switch v-model="editForm.is_active">
+
+          </el-switch>
+        </el-form-item>
+        <el-form-item class="el">
+          <el-button size="small" type="primary" @click="updateUser">修改</el-button>
+          <el-button size="small" @click="resetForm('editForm')">取消</el-button>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 <script>
@@ -146,10 +165,19 @@
                   email:'', // 邮箱
                   is_active:false // 状态
               },
+              // 用于编辑用户的对象
+              editForm:{
+                  "_id":'', // ID值
+                  "name":'',  // 姓名
+                  "phone":'', // 电话
+                  "email":'', // 邮箱
+                  "is_active":null // 是否启用
+              },
               // 添加的对话框
               addDialog:false,
               // 编辑的对话框
               editDialog:false,
+              // 用户列表显示
               userList:[
                   /*{
                     username:'zhangsan',
@@ -159,46 +187,47 @@
                     create_time:'2017年11月11号',
                     is_active:'激活'
                   },
-                  {
-                    username:'lisi',
-                    name:'李四',
-                    phone:'110',
-                    email:'120@qq.com',
-                    create_time:'2017年11月12号',
-                    is_active:'激活'
-                  },
-                  {
-                    username:'wangwu',
-                    name:'王五',
-                    phone:'110',
-                    email:'130@qq.com',
-                    create_time:'2017年11月13号',
-                    is_active:'激活'
-                  },*/
+                  */
               ],
+              // 添加时的表单验证
               addRules:{
                     username:[
-                      {required:true,message:'请输入用户名',tigger:'blur'},
-                      {min:3,max:10,message:'长度在 3 到 10 个字符',tigger:'blur'}
+                        {required:true,message:'请输入用户名',tigger:'blur'},
+                        {min:3,max:10,message:'长度在 3 到 10 个字符',tigger:'blur'}
                     ],
                     name:[
-                      {required:true,message:'请输入姓名',tigger:'blur'},
+                        {required:true,message:'请输入姓名',tigger:'blur'},
                     ],
                     password:[
-                      {required:true,message:'请输入密码',tigger:'blur'},
-                      {min:6,max:12,message:'密码长度不合法',tigger:'blur'}
+                        {required:true,message:'请输入密码',tigger:'blur'},
+                        {min:6,max:12,message:'密码长度不合法',tigger:'blur'}
                     ],
                     repeat_password:[
-                      {required:true,validator:checkPass,trigger:'blur'}
+                        {required:true,validator:checkPass,trigger:'blur'}
                     ],
                     phone:[
-                      {required:true,type:'number',message:'必须是数字类型',trigger:'blur'}
+                        {pattern: /^1[34578]\d{9}$/,message:'输入正确的手机号'},
+                        {required:true,type:'number',message:'请输入手机号',trigger:'blur'}
                     ],
                     email:[
-                      {required:true,type:'email',message:'必须是合法的邮箱格式',trigger:'blur'}
+                        {required:true,type:'email',message:'必须是合法的邮箱格式',trigger:'blur'}
                     ]
               },
-              total:0
+              // 编辑时的表单验证(也可以用上面的)
+              editRules:{
+                  name:[
+                      {required:true,message:'请输入姓名',tigger:'blur'},
+                  ],
+                  phone:[
+                    {pattern: /^1[34578]\d{9}$/,message:'输入正确的手机号'},
+                    {required:true,type:'number',message:'请输入手机号',trigger:'blur'}
+                  ],
+                  email:[
+                      {required:true,type:'email',message:'必须是合法的邮箱格式',trigger:'blur'}
+                  ]
+            },
+              total:0,
+              multipleSelection:{},
           }
       },
       methods:{
@@ -229,8 +258,13 @@
               })
           },
           resetForm:function(formName){
-              // 将弹出框关闭
-              this.addDialog = false;
+              if(formName == 'addForm'){
+                // 将新增的弹出框关闭
+                this.addDialog = false;
+              }else if(formName == 'editForm'){
+                // 将编辑的弹出框关闭
+                this.editDialog = false;
+              }
               // 将弹出框里面的内容清空
               this.$refs[formName].resetFields();
           },
@@ -246,14 +280,81 @@
                   var res = response.data;
                   this.userList = res.userList;
                   this.total = res.count;
-//                  console.log(this.total)
+                  // console.log(this.total)
               }).catch(err => {
                   console.log(err);
               })
           },
           pageChange:function(value){
-//              console.log(value);
+              // console.log(value);
               this.getUsers(value);
+          },
+          setUser:function(row){
+              // 编辑的弹出框开启
+              this.editDialog = true;
+              // 可以使用row里面的数据，将整行的用户信息输出
+              // console.log(row);
+              this.editForm._id = row._id;
+              this.editForm.name = row.name;
+              this.editForm.phone = row.phone;
+              this.editForm.email = row.email;
+              this.editForm.is_active = row.is_active;
+          },
+          updateUser:function(){
+              axios.post('/users/updateUser',this.editForm).then(response => {
+                  // console.log(response)
+                var res = response.data;
+                if(res.status == '0'){
+                    this.resetForm('editForm');
+                    this.$message.success('修改成功');
+                    this.getUsers();
+                }
+              }).catch(err => {
+                  console.log(err)
+              })
+          },
+          // 删除用户
+          deleteUser:function(row){
+              this.$confirm('此操作将永久删除用户'+ row.username +', 是否继续?', '提示', {
+                  confirmButtonText: '确定',
+                  cancelButtonText: '取消',
+                  type: 'warning',
+                  center:true
+              }).then(() => {
+                  axios.post('/users/remove',row).then(data=>{
+                      this.$message.success('删除成功!')
+                      this.getUsers();
+                  })
+              }).catch(() => {
+                  this.$message.info('已取消删除');
+              });
+          },
+          // 删除被选中的
+          selectionButton:function(val){
+              // console.log(val)
+              this.multipleSelection = val;
+          },
+          deleteSButton:function(){
+              this.$confirm('此操作将永久删除该文件, 是否继续?','提示',{
+                  confirmButtonText:'确定',
+                  cancelButtonText:'取消',
+                  type:'warning'
+              }).then(() => {
+                  axios.post('/users/deletes',this.multipleSelection).then(data=>{
+                      if (data.data.status == '0') {
+                          this.$message({
+                            type:'success',
+                            message:'删除成功!'
+                          });
+                          this.getUsers()
+                      }
+                  })
+              }).catch(() => {
+                  this.$message({
+                      type: 'info',
+                      message: '已取消删除'
+                  });
+              })
           }
       }
   }
